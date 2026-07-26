@@ -1,0 +1,334 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import GlassCard from '@components/GlassCard.astro';
+import CodeTabs from '@components/CodeTabs.astro';
+import Quiz from '@components/Quiz.astro';
+import ForwardPassDiagram from '@components/ForwardPassDiagram.astro';
+
+// LaTeX snippets are defined here as plain JS strings (not inline template
+// text) and injected with set:html below. This sidesteps Astro/JSX treating
+// literal "{" in prose as the start of a JS expression.
+const mathForwardPropIntro =
+  'Forward propagation is just repeated application of the perceptron equation, layer by ' +
+  'layer. For a neuron receiving inputs $x_1, \\dots, x_n$ with weights $w_i$ and bias $b$:';
+const mathForwardPropEq = '$$z = b + \\sum_{i=1}^{n} x_i w_i \\qquad \\text{out} = f(z)$$';
+const mathHiddenLayer =
+  '$$in_{h1} = w_1 i_1 + w_3 i_2 + b_1 = 0.25(0.1) + 0.5(0.05) + 0.3 = 0.35$$' +
+  '$$out_{h1} = \\frac{1}{1+e^{-0.35}} = 0.5866$$' +
+  '$$in_{h2} = w_2 i_1 + w_4 i_2 + b_1 = 0.2(0.1) + 0.15(0.05) + 0.3 = 0.3275$$' +
+  '$$out_{h2} = \\frac{1}{1+e^{-0.3275}} = 0.5812$$';
+const mathOutputLayer =
+  '$$in_{o1} = w_5 \\cdot out_{h1} + w_7 \\cdot out_{h2} + b_2 = 1.3415 \\Rightarrow out_{o1} = 0.7927$$' +
+  '$$in_{o2} = w_6 \\cdot out_{h1} + w_8 \\cdot out_{h2} + b_2 = 1.1546 \\Rightarrow out_{o2} = 0.7603$$';
+const mathCostIntro =
+  'A cost (or loss) function measures how wrong the network\u2019s output is relative to the ' +
+  'target. Using per-output squared error, with targets $\\text{target}_{o1} = 0.02$ and ' +
+  '$\\text{target}_{o2} = 0.98$:';
+const mathCostEq =
+  '$$E_{o1} = \\tfrac{1}{2}(target_{o1} - out_{o1})^2 = 0.2985$$' +
+  '$$E_{o2} = \\tfrac{1}{2}(target_{o2} - out_{o2})^2 = 0.0241$$' +
+  '$$E_{total} = E_{o1} + E_{o2} = 0.3226$$';
+const mathBackpropIntro =
+  'Backpropagation is the chain rule, applied systematically from the output layer backward ' +
+  'to the input layer. To update $w_7$ (the weight from $h_2$ to $o_1$), we need ' +
+  '$\\partial E_{total} / \\partial w_7$, decomposed into three factors:';
+const mathBackpropEq =
+  '$$\\frac{\\partial E_{total}}{\\partial w_7} = ' +
+  '\\frac{\\partial E_{total}}{\\partial out_{o1}} \\cdot ' +
+  '\\frac{\\partial out_{o1}}{\\partial in_{o1}} \\cdot ' +
+  '\\frac{\\partial in_{o1}}{\\partial w_7} = 0.0745$$';
+const mathBackpropExplain =
+  'Each factor is something you already know how to compute: the derivative of squared error, ' +
+  'the derivative of sigmoid (which is conveniently $out(1-out)$), and the partial derivative ' +
+  'of a weighted sum with respect to one of its weights (which is just the other input, ' +
+  '$out_{h2}$). Multiply the three together and you get the full gradient \u2014 no shortcuts.';
+const mathWeightUpdate =
+  '$$w_7^{new} = w_7^{old} - \\alpha \\cdot \\frac{\\partial E_{total}}{\\partial w_7} = 0.6 - 0.5(0.0745) = 0.5628$$';
+
+const backpropCode = [
+  {
+    label: 'python (from scratch)',
+    lang: 'python',
+    code: `import numpy as np
+
+def sigmoid(z: np.ndarray) -> np.ndarray:
+    return 1 / (1 + np.exp(-z))
+
+def sigmoid_derivative(out: np.ndarray) -> np.ndarray:
+    # Derivative of sigmoid expressed in terms of its own output — this is
+    # the same trick that makes backprop cheap to compute.
+    return out * (1 - out)
+
+# --- Same network as the worked example in this lesson ---
+i = np.array([0.1, 0.05])
+w_hidden = np.array([[0.25, 0.5], [0.2, 0.15]])   # w1,w3 / w2,w4
+b_hidden = 0.3
+w_output = np.array([[0.7, 0.6], [0.4, 0.35]])    # w5,w7 / w6,w8
+b_output = 0.9
+target = np.array([0.02, 0.98])
+lr = 0.5
+
+# Forward pass
+in_hidden = i @ w_hidden.T + b_hidden
+out_hidden = sigmoid(in_hidden)
+
+in_output = out_hidden @ w_output.T + b_output
+out_output = sigmoid(in_output)
+
+# Loss: sum of squared error, split per output neuron (as in the slides)
+error = 0.5 * (target - out_output) ** 2
+print("out_hidden:", out_hidden.round(4))
+print("out_output:", out_output.round(4))
+print("total error:", error.sum().round(4))
+
+# Backpropagation: d(E_total)/d(w7) via the chain rule
+d_error_d_output = -(target - out_output)          # dE/d(out_o)
+d_output_d_input = sigmoid_derivative(out_output)   # d(out_o)/d(in_o)
+d_input_d_w7 = out_hidden[1]                        # d(in_o2)/d(w7) = out_h2
+
+d_error_d_w7 = d_error_d_output[1] * d_output_d_input[1] * d_input_d_w7
+w7_new = w_output[1, 0] - lr * d_error_d_w7
+
+print("dE_total/dw7:", round(d_error_d_w7, 4))
+print("w7 updated:", round(w7_new, 4))
+`,
+  },
+  {
+    label: 'tensorflow / keras',
+    lang: 'python',
+    code: `import tensorflow as tf
+
+# GradientTape records every operation in the forward pass, then
+# auto-differentiates it — this is a general computational-graph version
+# of the by-hand chain rule shown in the from-scratch example.
+i = tf.constant([[0.1, 0.05]])
+target = tf.constant([[0.02, 0.98]])
+
+w_hidden = tf.Variable([[0.25, 0.2], [0.5, 0.15]])
+b_hidden = tf.Variable([0.3, 0.3])
+w_output = tf.Variable([[0.7, 0.4], [0.6, 0.35]])
+b_output = tf.Variable([0.9, 0.9])
+
+with tf.GradientTape() as tape:
+    hidden = tf.sigmoid(i @ w_hidden + b_hidden)
+    output = tf.sigmoid(hidden @ w_output + b_output)
+    loss = tf.reduce_sum(0.5 * tf.square(target - output))
+
+grads = tape.gradient(loss, [w_hidden, b_hidden, w_output, b_output])
+print("loss:", loss.numpy())
+print("dL/dw_output:\\n", grads[2].numpy())
+`,
+  },
+  {
+    label: 'pytorch',
+    lang: 'python',
+    code: `import torch
+
+i = torch.tensor([[0.1, 0.05]])
+target = torch.tensor([[0.02, 0.98]])
+
+w_hidden = torch.tensor([[0.25, 0.2], [0.5, 0.15]], requires_grad=True)
+b_hidden = torch.tensor([0.3, 0.3], requires_grad=True)
+w_output = torch.tensor([[0.7, 0.4], [0.6, 0.35]], requires_grad=True)
+b_output = torch.tensor([0.9, 0.9], requires_grad=True)
+
+hidden = torch.sigmoid(i @ w_hidden + b_hidden)
+output = torch.sigmoid(hidden @ w_output + b_output)
+loss = torch.sum(0.5 * (target - output) ** 2)
+
+loss.backward()  # autograd computes every gradient in the graph in one call
+
+print("loss:", loss.item())
+print("dL/dw_output:\\n", w_output.grad)
+`,
+  },
+];
+---
+<BaseLayout
+  title="Forward Propagation & Backpropagation via Gradient Descent"
+  description="A fully worked numeric example of forward propagation and backpropagation, computed by hand and then reproduced in TensorFlow and PyTorch."
+>
+  <article class="container lesson">
+    <span class="eyebrow">Deep Learning Foundation · Lesson 02</span>
+    <h1>Forward Propagation & Backpropagation via Gradient Descent</h1>
+    <p class="lede">
+      This lesson takes one small network — two inputs, one hidden layer of two neurons, two
+      outputs — and computes every single number by hand: the forward pass, the error, and one
+      full backpropagation update. Once you've traced these numbers yourself, "autograd" in
+      TensorFlow or PyTorch stops looking like magic.
+    </p>
+
+    <GlassCard eyebrow="Objectives" title="By the end of this lesson you will be able to">
+      <ul>
+        <li>Compute a forward pass through a small network by hand, step by step.</li>
+        <li>Explain what a cost function measures and why squared error is a reasonable default.</li>
+        <li>Derive a single weight update using the chain rule, matching backpropagation's actual mechanics.</li>
+        <li>Explain why learning rate size trades off convergence speed against stability.</li>
+      </ul>
+      <p><strong>Prerequisites:</strong> Lesson 01 (Perceptron & MLP), single-variable calculus (the chain rule).</p>
+    </GlassCard>
+
+    <h2>Forward propagation</h2>
+    <p set:html={mathForwardPropIntro} />
+    <p set:html={mathForwardPropEq} />
+
+    <h3>Worked example</h3>
+    <p>
+      Consider a network with two input neurons (i&#8321; = 0.1, i&#8322; = 0.05), one hidden layer of
+      two neurons, and two output neurons, using the sigmoid activation throughout:
+    </p>
+
+    <ForwardPassDiagram />
+
+    <p>Computing the hidden layer:</p>
+    <p set:html={mathHiddenLayer} />
+    <p>Then the output layer, using the hidden outputs as its inputs:</p>
+    <p set:html={mathOutputLayer} />
+    <p>Toggle the diagram above to "Computed values" to see these numbers laid over the network graph.</p>
+
+    <h2>The cost function</h2>
+    <p set:html={mathCostIntro} />
+    <p set:html={mathCostEq} />
+    <p>
+      That <code>0.3226</code> is the single number the entire training process exists to
+      minimize. Every weight in the network will be nudged, on every training step, in whatever
+      direction reduces this number.
+    </p>
+
+    <h2>Backpropagation: computing one gradient by hand</h2>
+    <p set:html={mathBackpropIntro} />
+    <p set:html={mathBackpropEq} />
+    <p set:html={mathBackpropExplain} />
+    <p>The weight is then updated against the gradient, scaled by the learning rate $\alpha$:</p>
+    <p set:html={mathWeightUpdate} />
+    <p>Every other weight in the network is updated the same way — same chain rule, different path back through the graph.</p>
+
+    <GlassCard eyebrow="On learning rate" accent="ember">
+      <p>
+        A learning rate that's too large overshoots the minimum on every step and can fail to
+        converge at all; too small, and training crawls toward the minimum so slowly it looks
+        like it has stalled. There is no universally correct value — it's tuned per problem,
+        which is exactly why schedulers and adaptive optimizers like Adam exist.
+      </p>
+    </GlassCard>
+
+    <h2>Implementation</h2>
+    <p>
+      First, the exact by-hand computation above reproduced in NumPy — so you can verify every
+      intermediate number matches. Then the same forward pass and gradient computed
+      automatically by TensorFlow's <code>GradientTape</code> and PyTorch's <code>autograd</code>.
+    </p>
+    <CodeTabs id="backprop-code" tabs={backpropCode} />
+
+    <h2>Enterprise case study: firewall policy scoring</h2>
+    <GlassCard eyebrow="Applied" accent="current">
+      <p>
+        An AI firewall-policy optimizer scores candidate rule orderings by predicted latency
+        impact and coverage. Each candidate ordering is one forward pass through a small
+        network; the "error" being minimized during offline training is the gap between
+        predicted and measured latency on historical traffic captures. Backpropagation here is
+        identical in mechanism to the toy example above — the only difference is the input
+        vector is a feature-engineered representation of a rule set rather than two scalar
+        inputs.
+      </p>
+    </GlassCard>
+
+    <h2>Interview questions</h2>
+    <GlassCard eyebrow="Practice">
+      <ol>
+        <li>Why is sigmoid's derivative conveniently expressible as $out(1-out)$, and why does this matter for computational efficiency during backprop?</li>
+        <li>Walk through, in words, what "vanishing gradient" means in terms of the chain-rule product you computed above.</li>
+        <li>What's the practical difference between batch gradient descent, stochastic gradient descent, and mini-batch gradient descent?</li>
+      </ol>
+    </GlassCard>
+
+    <h2>Troubleshooting guide</h2>
+    <GlassCard eyebrow="When gradients misbehave" accent="ember">
+      <ul>
+        <li><strong>Loss becomes NaN:</strong> learning rate too high, or missing gradient clipping on a deep/recurrent network.</li>
+        <li><strong>Loss decreases then plateaus early:</strong> possible vanishing gradients — check activation choice and initialization (Lesson 04).</li>
+        <li><strong>TensorFlow/PyTorch gradient is None:</strong> a tensor was detached from the graph (missing <code>requires_grad</code>, or an operation outside <code>GradientTape</code>).</li>
+      </ul>
+    </GlassCard>
+
+    <Quiz
+      id="lesson-2-quiz"
+      questions={[
+        {
+          question: 'In the worked example, what does the value 0.3226 represent?',
+          options: [
+            'The learning rate',
+            'The total error (cost) across both output neurons for this single forward pass',
+            'The output of the hidden layer',
+            'The updated weight w7',
+          ],
+          correctIndex: 1,
+          explanation: 'E_total = E_o1 + E_o2 = 0.2985 + 0.0241 = 0.3226 — the sum of squared error across both outputs.',
+        },
+        {
+          question: 'Backpropagation computes gradients using which mathematical rule?',
+          options: ['The chain rule', "L'Hopital's rule", 'Bayes\' theorem', 'The power rule alone'],
+          correctIndex: 0,
+          explanation: 'Backpropagation is a systematic, layer-by-layer application of the chain rule from calculus.',
+        },
+        {
+          question: 'If the learning rate is set far too high, what typically happens?',
+          options: [
+            'Training converges faster with no downside',
+            'Weight updates overshoot the minimum and the loss can oscillate or diverge',
+            'The activation function changes automatically',
+            'Backpropagation stops computing gradients',
+          ],
+          correctIndex: 1,
+          explanation: 'Large steps can repeatedly jump past the minimum of the cost surface, preventing convergence.',
+        },
+      ]}
+    />
+
+    <GlassCard eyebrow="Assignment">
+      <p>
+        Using the worked example's initial weights, compute the updated value of $w_5$ by hand
+        (show every step of the chain-rule decomposition), then verify your answer using the
+        PyTorch <code>autograd</code> example above.
+      </p>
+    </GlassCard>
+
+    <GlassCard eyebrow="Mini project" accent="current">
+      <p>
+        Extend the NumPy implementation into a full training loop (forward pass → compute loss →
+        backward pass → update all 8 weights and 2 biases) that runs for 1,000 iterations on the
+        worked example's targets. Plot the total error against iteration number and confirm it
+        decreases monotonically.
+      </p>
+    </GlassCard>
+
+    <h2>References</h2>
+    <ul class="refs">
+      <li>Rumelhart, Hinton, Williams (1986). "Learning representations by back-propagating errors." <em>Nature</em>.</li>
+      <li>Goodfellow, Bengio, Courville. <em>Deep Learning</em>, Chapter 6.5: Back-Propagation.</li>
+      <li>TensorFlow documentation: <em>Introduction to Gradients and Automatic Differentiation</em>.</li>
+    </ul>
+
+    <GlassCard eyebrow="Summary">
+      <p>
+        Forward propagation computes a prediction; the cost function scores how wrong it is;
+        backpropagation applies the chain rule to work out exactly how much each individual
+        weight contributed to that error; gradient descent nudges every weight in the direction
+        that reduces it. Repeat that loop until the cost is negligible, and you have a trained
+        network.
+      </p>
+    </GlassCard>
+
+    <nav class="lesson-nav">
+      <a href="/neuronet-academy/courses/deep-learning/perceptron-and-neurons/">← Perceptron & MLP</a>
+      <a href="/neuronet-academy/courses/deep-learning/">Course overview →</a>
+    </nav>
+  </article>
+
+  <style>
+    .lesson { padding-block: var(--space-16) var(--space-24); max-width: 860px; }
+    .lede { font-size: var(--text-lg); }
+    .refs { color: var(--color-mist); font-size: var(--text-sm); }
+    .lesson-nav { display: flex; justify-content: space-between; margin-top: var(--space-16); padding-top: var(--space-8); border-top: 1px solid var(--color-border); font-size: var(--text-sm); }
+  </style>
+</BaseLayout>

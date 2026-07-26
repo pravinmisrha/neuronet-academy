@@ -1,0 +1,73 @@
+---
+// Renders a tabbed code block. Each tab is { label, lang, code }.
+interface Tab {
+  label: string;
+  lang: string;
+  code: string;
+}
+interface Props {
+  tabs: Tab[];
+  id: string;
+}
+const { tabs, id } = Astro.props;
+---
+<div class="code-tabs glass" data-tabs={id}>
+  <div class="tab-bar" role="tablist">
+    {tabs.map((tab, i) => (
+      <button
+        role="tab"
+        type="button"
+        class:list={['tab-btn', { active: i === 0 }]}
+        data-target={`${id}-${i}`}
+        aria-selected={i === 0}
+      >
+        {tab.label}
+      </button>
+    ))}
+  </div>
+  {tabs.map((tab, i) => (
+    <pre
+      id={`${id}-${i}`}
+      class:list={['tab-panel', { hidden: i !== 0 }]}
+    ><code class={`language-${tab.lang}`} set:text={tab.code} /></pre>
+  ))}
+</div>
+
+<script>
+  document.querySelectorAll('.code-tabs').forEach((container) => {
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.tab-btn');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        container.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        container.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
+        btn.classList.add('active');
+        container.querySelector(`#${target}`)?.classList.remove('hidden');
+      });
+    });
+  });
+</script>
+
+<style>
+  .code-tabs { margin-bottom: var(--space-6); overflow: hidden; padding: 0; }
+  .tab-bar {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .tab-btn {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    background: transparent;
+    border: none;
+    color: var(--color-mist);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .tab-btn.active { background: rgba(94, 234, 212, 0.1); color: var(--color-signal); }
+  .tab-panel { margin: 0; padding: var(--space-6); overflow-x: auto; background: transparent !important; }
+  .tab-panel.hidden { display: none; }
+  .tab-panel code { background: none !important; font-size: var(--text-sm); }
+</style>

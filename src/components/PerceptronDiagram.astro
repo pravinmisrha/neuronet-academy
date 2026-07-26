@@ -1,0 +1,107 @@
+---
+// Interactive SVG: hovering an input highlights its weighted path into the
+// summation node, reinforcing "inputs -> weights -> sum -> activation -> output".
+---
+<div class="diagram glass">
+  <span class="eyebrow">Interactive diagram</span>
+  <svg viewBox="0 0 640 260" role="img" aria-label="Perceptron: inputs x1..xn, each multiplied by a weight, summed, passed through an activation function f(z), producing output y">
+    <g class="inputs">
+      <circle cx="60" cy="50" r="18" class="node input" data-i="1" tabindex="0" />
+      <text x="60" y="55" class="node-label">x₁</text>
+      <circle cx="60" cy="130" r="18" class="node input" data-i="2" tabindex="0" />
+      <text x="60" y="135" class="node-label">x₂</text>
+      <circle cx="60" cy="210" r="18" class="node input" data-i="3" tabindex="0" />
+      <text x="60" y="215" class="node-label">xₙ</text>
+    </g>
+
+    <path d="M78,50 C170,50 170,140 300,140" class="edge" data-i="1" />
+    <path d="M78,130 C170,130 170,140 300,140" class="edge" data-i="2" />
+    <path d="M78,210 C170,210 170,140 300,140" class="edge" data-i="3" />
+
+    <text x="150" y="40" class="edge-label">w₁</text>
+    <text x="150" y="150" class="edge-label">w₂</text>
+    <text x="150" y="235" class="edge-label">wₙ</text>
+
+    <circle cx="330" cy="140" r="26" class="node sum" />
+    <text x="330" y="146" class="node-label big">Σ</text>
+
+    <path d="M356,140 L420,140" class="edge plain" />
+
+    <circle cx="460" cy="140" r="26" class="node activation" />
+    <text x="460" y="146" class="node-label">f(z)</text>
+
+    <path d="M486,140 L560,140" class="edge plain" />
+    <circle cx="590" cy="140" r="18" class="node output" />
+    <text x="590" y="145" class="node-label">y</text>
+  </svg>
+  <p class="caption">Hover or focus an input to trace how it flows through the perceptron.</p>
+</div>
+
+<style>
+  .diagram { padding: var(--space-8); text-align: center; }
+  svg { width: 100%; height: auto; max-width: 640px; }
+  .node { fill: var(--color-graphite-2); stroke: var(--color-border-strong); stroke-width: 1.5; transition: all 200ms ease; }
+  .node.input:hover, .node.sum:hover { stroke: var(--color-signal); fill: rgba(94,234,212,0.12); }
+  .node.activation { stroke: var(--color-current); }
+  .node.output { stroke: var(--color-signal); fill: rgba(94,234,212,0.12); }
+  .node-label { font-family: var(--font-mono); font-size: 13px; fill: var(--color-paper); text-anchor: middle; }
+  .node-label.big { font-size: 20px; }
+  .edge { fill: none; stroke: var(--color-mist-dim); stroke-width: 1.5; transition: stroke 200ms ease, stroke-width 200ms ease; }
+  .edge.plain { stroke-dasharray: none; }
+  .edge.active { stroke: var(--color-signal); stroke-width: 3; }
+  .edge-label { font-family: var(--font-mono); font-size: 11px; fill: var(--color-mist); }
+  .edge-label.active { fill: var(--color-signal); }
+  .node.input { cursor: pointer; }
+  .node.input.active { stroke: var(--color-signal); fill: rgba(94,234,212,0.20); }
+  .node.sum.active,
+  .node.activation.active,
+  .node.output.active { stroke: var(--color-signal); fill: rgba(94,234,212,0.12); }
+  .caption { margin-top: var(--space-4); font-size: var(--text-sm); color: var(--color-mist-dim); }
+</style>
+
+<script>
+  const initPerceptronDiagram = () => {
+    const diagram = document.querySelector('.diagram');
+    if (!diagram) return;
+    const svg = diagram.querySelector('svg');
+    if (!svg) return;
+
+    const sumNode = svg.querySelector('.node.sum');
+    const activationNode = svg.querySelector('.node.activation');
+    const outputNode = svg.querySelector('.node.output');
+
+    svg.querySelectorAll('.node.input').forEach((input) => {
+      const id = input.getAttribute('data-i');
+      if (!id) return;
+      const edge = svg.querySelector(`.edge[data-i="${id}"]`);
+      if (!edge) return;
+
+      const activate = () => {
+        edge.classList.add('active');
+        input.classList.add('active');
+        sumNode?.classList.add('active');
+        activationNode?.classList.add('active');
+        outputNode?.classList.add('active');
+      };
+
+      const deactivate = () => {
+        edge.classList.remove('active');
+        input.classList.remove('active');
+        sumNode?.classList.remove('active');
+        activationNode?.classList.remove('active');
+        outputNode?.classList.remove('active');
+      };
+
+      input.addEventListener('mouseenter', activate);
+      input.addEventListener('mouseleave', deactivate);
+      input.addEventListener('focus', activate);
+      input.addEventListener('blur', deactivate);
+    });
+  };
+
+  if (document.readyState !== 'loading') {
+    initPerceptronDiagram();
+  } else {
+    document.addEventListener('DOMContentLoaded', initPerceptronDiagram);
+  }
+</script>

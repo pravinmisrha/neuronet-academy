@@ -1,0 +1,110 @@
+---
+// Renders the worked numeric example (2 inputs, 1 hidden layer of 2, 2 outputs)
+// so learners can toggle between the "before" (weights only) and "after"
+// (computed values) states of forward propagation.
+---
+<div class="fp-diagram glass">
+  <span class="eyebrow">Worked example</span>
+  <div class="fp-toggle">
+    <button type="button" class="fp-btn active" data-state="weights">Weights</button>
+    <button type="button" class="fp-btn" data-state="values">Computed values</button>
+  </div>
+
+  <svg viewBox="0 0 620 300" role="img" aria-label="Two input neurons feeding a hidden layer of two neurons, feeding two output neurons, with weights and biases labeled">
+    <!-- edges -->
+    <g class="edges">
+      <line x1="90" y1="80" x2="300" y2="70" />
+      <line x1="90" y1="80" x2="300" y2="220" />
+      <line x1="90" y1="220" x2="300" y2="70" />
+      <line x1="90" y1="220" x2="300" y2="220" />
+      <line x1="330" y1="70" x2="530" y2="80" />
+      <line x1="330" y1="70" x2="530" y2="220" />
+      <line x1="330" y1="220" x2="530" y2="80" />
+      <line x1="330" y1="220" x2="530" y2="220" />
+    </g>
+
+    <!-- input layer -->
+    <circle cx="70" cy="80" r="20" class="node input" />
+    <text x="70" y="86" class="label">i₁</text>
+    <text x="30" y="86" class="tag">0.1</text>
+    <circle cx="70" cy="220" r="20" class="node input" />
+    <text x="70" y="226" class="label">i₂</text>
+    <text x="30" y="226" class="tag">0.05</text>
+
+    <!-- hidden layer -->
+    <circle cx="315" cy="70" r="22" class="node hidden" />
+    <text x="315" y="76" class="label">h₁</text>
+    <circle cx="315" cy="220" r="22" class="node hidden" />
+    <text x="315" y="226" class="label">h₂</text>
+
+    <!-- output layer -->
+    <circle cx="545" cy="80" r="20" class="node output" />
+    <text x="545" y="86" class="label">o₁</text>
+    <text x="580" y="60" class="tag">target 0.02</text>
+    <circle cx="545" cy="220" r="20" class="node output" />
+    <text x="545" y="226" class="label">o₂</text>
+    <text x="580" y="245" class="tag">target 0.98</text>
+
+    <!-- weight labels (toggle layer) -->
+    <g class="weight-labels">
+      <text x="180" y="60" class="wlabel">w₁=0.25</text>
+      <text x="180" y="240" class="wlabel">w₃=0.5</text>
+      <text x="180" y="105" class="wlabel">w₂=0.2</text>
+      <text x="180" y="195" class="wlabel">w₄=0.15</text>
+      <text x="420" y="60" class="wlabel">w₅=0.7</text>
+      <text x="420" y="240" class="wlabel">w₇=0.6</text>
+      <text x="420" y="105" class="wlabel">w₆=0.4</text>
+      <text x="420" y="195" class="wlabel">w₈=0.35</text>
+    </g>
+
+    <!-- computed-value labels (toggle layer) -->
+    <g class="value-labels hidden">
+      <text x="315" y="150" class="vlabel">in_h1=0.35 → out_h1=0.5866</text>
+      <text x="315" y="170" class="vlabel">in_h2=0.3275 → out_h2=0.5812</text>
+      <text x="545" y="150" class="vlabel">out_o1=0.7927 (target 0.02)</text>
+      <text x="545" y="170" class="vlabel">out_o2=0.7603 (target 0.98)</text>
+    </g>
+  </svg>
+
+  <p class="caption">
+    Total error after this pass: <strong>E<sub>total</sub> = 0.3226</strong>.
+    Backpropagation then computes ∂E<sub>total</sub>/∂w₇ = 0.0745 via the chain rule,
+    updating w₇ → 0.5628 with a learning rate of 0.5.
+  </p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.fp-diagram').forEach((container) => {
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.fp-btn');
+    const weightLabels = container.querySelector('.weight-labels');
+    const valueLabels = container.querySelector('.value-labels');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const showValues = btn.dataset.state === 'values';
+        weightLabels?.classList.toggle('hidden', showValues);
+        valueLabels?.classList.toggle('hidden', !showValues);
+      });
+    });
+  });
+</script>
+
+<style>
+  .fp-diagram { padding: var(--space-8); text-align: center; }
+  .fp-toggle { display: inline-flex; gap: var(--space-2); margin-bottom: var(--space-6); background: var(--color-graphite-2); padding: var(--space-1); border-radius: var(--radius-sm); }
+  .fp-btn { font-family: var(--font-mono); font-size: var(--text-xs); background: transparent; border: none; color: var(--color-mist); padding: var(--space-2) var(--space-4); border-radius: 6px; cursor: pointer; }
+  .fp-btn.active { background: var(--color-signal); color: #06231f; }
+  svg { width: 100%; max-width: 620px; height: auto; }
+  .node { fill: var(--color-graphite-2); stroke-width: 1.5; }
+  .node.input { stroke: var(--color-mist-dim); }
+  .node.hidden { stroke: var(--color-current); }
+  .node.output { stroke: var(--color-signal); }
+  .label { font-family: var(--font-mono); font-size: 13px; fill: var(--color-paper); text-anchor: middle; }
+  .tag { font-family: var(--font-mono); font-size: 11px; fill: var(--color-mist); text-anchor: middle; }
+  .edges line { stroke: var(--color-border-strong); stroke-width: 1.2; }
+  .wlabel, .vlabel { font-family: var(--font-mono); font-size: 10.5px; fill: var(--color-mist); text-anchor: middle; }
+  .vlabel { fill: var(--color-signal); }
+  .hidden { display: none; }
+  .caption { margin-top: var(--space-4); font-size: var(--text-sm); color: var(--color-mist); }
+</style>

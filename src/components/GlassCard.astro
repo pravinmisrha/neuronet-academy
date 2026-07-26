@@ -1,0 +1,30 @@
+---
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  accent?: 'signal' | 'current' | 'ember';
+}
+const { eyebrow, title, accent = 'signal' } = Astro.props;
+---
+<section class:list={['glass card', `accent-${accent}`]}>
+  {eyebrow && <span class="eyebrow">{eyebrow}</span>}
+  {title && <h3>{title}</h3>}
+  <div class="card-body">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .card {
+    padding: var(--space-8);
+    margin-bottom: var(--space-6);
+  }
+  .card.accent-current { border-color: rgba(129, 140, 248, 0.18); }
+  .card.accent-ember { border-color: rgba(251, 146, 60, 0.22); }
+  .accent-current .eyebrow { color: var(--color-current); }
+  .accent-current .eyebrow::before { background: var(--color-current); box-shadow: 0 0 8px 1px var(--color-current); }
+  .accent-ember .eyebrow { color: var(--color-ember); }
+  .accent-ember .eyebrow::before { background: var(--color-ember); box-shadow: 0 0 8px 1px var(--color-ember); }
+  h3 { margin-top: var(--space-2); }
+  .card-body :global(p:last-child) { margin-bottom: 0; }
+</style>

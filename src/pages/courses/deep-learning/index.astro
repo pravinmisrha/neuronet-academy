@@ -1,0 +1,52 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { deepLearningCourse } from '@data/deepLearningCourse';
+---
+<BaseLayout
+  title={deepLearningCourse.title}
+  description={deepLearningCourse.description}
+>
+  <section class="container syllabus">
+    <span class="eyebrow">Course</span>
+    <h1>{deepLearningCourse.title}</h1>
+    <p class="lede">{deepLearningCourse.description}</p>
+
+    <ol class="syllabus-list">
+      {deepLearningCourse.lessons.map((lesson, i) => (
+        <li class="glass syllabus-item">
+          <span class="index mono">{String(i + 1).padStart(2, '0')}</span>
+          <div class="body">
+            <div class="row">
+              <h3>{lesson.title}</h3>
+              <span class:list={['status', lesson.status]}>
+                {lesson.status === 'available' ? 'Available' : 'Coming next'}
+              </span>
+            </div>
+            <p>{lesson.summary}</p>
+            {lesson.status === 'available' && (
+              <a class="btn btn-ghost" href={`/neuronet-academy/courses/deep-learning/${lesson.slug}/`}>
+                Open lesson →
+              </a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <style>
+    .syllabus { padding-block: var(--space-16) var(--space-24); }
+    .lede { max-width: 68ch; font-size: var(--text-lg); }
+    .syllabus-list { list-style: none; padding: 0; margin-top: var(--space-12); display: flex; flex-direction: column; gap: var(--space-4); }
+    .syllabus-item { display: flex; gap: var(--space-6); padding: var(--space-6); align-items: flex-start; }
+    .index { font-size: var(--text-2xl); color: var(--color-mist-dim); font-family: var(--font-mono); }
+    .row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+    .row h3 { margin: 0; }
+    .status { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; }
+    .status.available { color: var(--color-signal); border: 1px solid rgba(94,234,212,0.4); }
+    .status.in-progress { color: var(--color-mist-dim); border: 1px solid var(--color-border-strong); }
+    @media (max-width: 640px) {
+      .syllabus-item { flex-direction: column; }
+    }
+  </style>
+</BaseLayout>

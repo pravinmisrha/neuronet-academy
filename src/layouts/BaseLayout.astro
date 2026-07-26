@@ -1,0 +1,110 @@
+---
+import '@styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title} · NeuroNet Academy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- MathJax for rendering LaTeX math throughout lessons -->
+    <script is:inline>
+      window.MathJax = {
+        tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+        svg: { fontCache: 'global' },
+      };
+    </script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+
+    <!-- Prism for syntax-highlighted code tabs -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+    />
+  </head>
+  <body>
+    <header class="site-nav glass">
+      <div class="container nav-inner">
+        <a class="brand" href="/neuronet-academy/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          NeuroNet Academy
+        </a>
+        <nav>
+          <a href="/neuronet-academy/courses/deep-learning/">Deep Learning</a>
+          <a href="/neuronet-academy/#courses">Courses</a>
+          <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="container site-footer">
+      <p>NeuroNet Academy — an open engineering education platform. Built in the open.</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <style>
+      .site-nav {
+        position: sticky;
+        top: var(--space-4);
+        z-index: 50;
+        margin: var(--space-4) var(--space-6) 0;
+        border-radius: var(--radius-md);
+      }
+      @media (min-width: 1240px) {
+        .site-nav { margin-inline: auto; max-width: calc(var(--content-max) + 3rem); left: 0; right: 0; }
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        max-width: none;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        font-family: var(--font-display);
+        font-weight: 600;
+        color: var(--color-paper);
+        font-size: var(--text-lg);
+      }
+      .brand-mark {
+        width: 20px; height: 20px; border-radius: 6px;
+        background: var(--gradient-signal);
+        box-shadow: 0 0 16px 2px rgba(94,234,212,0.35);
+      }
+      nav { display: flex; gap: var(--space-6); }
+      nav a { color: var(--color-mist); font-size: var(--text-sm); font-weight: 500; }
+      nav a:hover { color: var(--color-signal); }
+      .site-footer {
+        padding: var(--space-16) var(--space-6) var(--space-24);
+        color: var(--color-mist-dim);
+        font-size: var(--text-sm);
+        border-top: 1px solid var(--color-border);
+        margin-top: var(--space-24);
+      }
+    </style>
+  </body>
+</html>

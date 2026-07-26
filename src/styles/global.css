@@ -1,0 +1,194 @@
+/* =========================================================================
+   NeuroNet Academy — Design Tokens
+   Theme: "Signal & Structure" — raw electrical signal resolving into
+   learned network topology. Built for engineers who read oscilloscopes
+   and topology diagrams, not marketing decks.
+   ========================================================================= */
+
+:root {
+  /* ---- Color: surfaces ---- */
+  --color-void: #0a0e14;       /* base background, blue-black, not pure black */
+  --color-graphite: #12161f;   /* elevated surface, pre-glass */
+  --color-graphite-2: #171c27; /* secondary elevated surface */
+  --color-border: rgba(230, 237, 243, 0.08);
+  --color-border-strong: rgba(230, 237, 243, 0.16);
+
+  /* ---- Color: accents ---- */
+  --color-signal: #5eead4;     /* teal — primary accent, "the trace" */
+  --color-current: #818cf8;    /* indigo — secondary accent, "the flow" */
+  --color-ember: #fb923c;      /* amber — warnings, interview call-outs */
+  --color-danger: #f87171;
+
+  /* ---- Color: text ---- */
+  --color-paper: #e6edf3;      /* primary text, off-white */
+  --color-mist: #94a3b8;       /* secondary/muted text */
+  --color-mist-dim: #5b6b81;
+
+  /* ---- Gradients ---- */
+  --gradient-signal: linear-gradient(120deg, var(--color-signal) 0%, var(--color-current) 100%);
+  --gradient-glass: linear-gradient(160deg, rgba(230, 237, 243, 0.06) 0%, rgba(230, 237, 243, 0.015) 100%);
+
+  /* ---- Typography ---- */
+  --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 4rem;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* ---- Radius / shadow / glass ---- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --blur-glass: 18px;
+  --shadow-elevated: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+
+  /* ---- Layout ---- */
+  --content-max: 1180px;
+  --nav-height: 72px;
+}
+
+/* ---- Reduced motion respected globally ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  background: var(--color-void);
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--color-paper);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(94, 234, 212, 0.07), transparent 60%),
+    radial-gradient(900px 500px at 5% 10%, rgba(129, 140, 248, 0.06), transparent 55%),
+    var(--color-void);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--color-paper);
+  margin: 0 0 var(--space-4);
+}
+
+h1 { font-size: var(--text-5xl); }
+h2 { font-size: var(--text-3xl); }
+h3 { font-size: var(--text-xl); }
+
+p { margin: 0 0 var(--space-4); color: var(--color-mist); }
+
+a { color: var(--color-signal); text-decoration: none; }
+a:hover { color: var(--color-current); }
+
+code, pre, .mono { font-family: var(--font-mono); }
+
+/* ---- Visible keyboard focus (accessibility floor) ---- */
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---- Layout helpers ---- */
+.container {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--space-6);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-signal);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-signal);
+  box-shadow: 0 0 8px 1px var(--color-signal);
+}
+
+/* ---- Glass surface (used sparingly — cards, nav) ---- */
+.glass {
+  background: var(--gradient-glass);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  box-shadow: var(--shadow-elevated);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.btn-primary {
+  background: var(--gradient-signal);
+  color: #06231f;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 30px -8px rgba(94, 234, 212, 0.45); color: #06231f; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-paper);
+  border-color: var(--color-border-strong);
+}
+.btn-ghost:hover { border-color: var(--color-signal); color: var(--color-signal); }
+
+@media (max-width: 720px) {
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+}

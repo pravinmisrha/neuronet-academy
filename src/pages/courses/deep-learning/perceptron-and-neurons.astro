@@ -1,0 +1,334 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import GlassCard from '@components/GlassCard.astro';
+import CodeTabs from '@components/CodeTabs.astro';
+import Quiz from '@components/Quiz.astro';
+import PerceptronDiagram from '@components/PerceptronDiagram.astro';
+
+const mathPerceptronEq = '$$z = b + \\sum_{i=1}^{n} x_i w_i \\qquad y = f(z)$$';
+
+const perceptronCode = [
+  {
+    label: 'python (from scratch)',
+    lang: 'python',
+    code: `import numpy as np
+
+class Perceptron:
+    """A single-layer perceptron trained with the perceptron learning rule.
+    Learns a linearly separable boolean function, e.g. AND."""
+
+    def __init__(self, n_inputs: int, learning_rate: float = 0.1):
+        self.weights = np.zeros(n_inputs)
+        self.bias = 0.0
+        self.lr = learning_rate
+
+    def activate(self, z: float) -> int:
+        return 1 if z >= 0 else 0
+
+    def predict(self, x: np.ndarray) -> int:
+        z = np.dot(self.weights, x) + self.bias
+        return self.activate(z)
+
+    def fit(self, X: np.ndarray, y: np.ndarray, epochs: int = 20) -> None:
+        for _ in range(epochs):
+            for xi, target in zip(X, y):
+                prediction = self.predict(xi)
+                error = target - prediction
+                # Perceptron update rule: nudge weights toward reducing error
+                self.weights += self.lr * error * xi
+                self.bias += self.lr * error
+
+
+if __name__ == "__main__":
+    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    y_and = np.array([0, 0, 0, 1])  # logical AND is linearly separable
+
+    model = Perceptron(n_inputs=2)
+    model.fit(X, y_and)
+
+    for xi in X:
+        print(xi, "->", model.predict(xi))
+`,
+  },
+  {
+    label: 'tensorflow / keras',
+    lang: 'python',
+    code: `import tensorflow as tf
+import numpy as np
+
+# XOR is NOT linearly separable — a single perceptron cannot learn it.
+# This is exactly why the multilayer perceptron (MLP) exists: one hidden
+# layer gives the network the extra decision boundary it needs.
+X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype="float32")
+y_xor = np.array([0, 1, 1, 0], dtype="float32")
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(4, activation="relu", input_shape=(2,)),  # hidden layer
+    tf.keras.layers.Dense(1, activation="sigmoid"),                  # output layer
+])
+
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+model.fit(X, y_xor, epochs=500, verbose=0)
+
+print(model.predict(X).round(2))
+`,
+  },
+  {
+    label: 'pytorch',
+    lang: 'python',
+    code: `import torch
+import torch.nn as nn
+
+X = torch.tensor([[0., 0.], [0., 1.], [1., 0.], [1., 1.]])
+y_xor = torch.tensor([[0.], [1.], [1.], [0.]])
+
+class XorMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.hidden = nn.Linear(2, 4)
+        self.output = nn.Linear(4, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = torch.relu(self.hidden(x))
+        return torch.sigmoid(self.output(x))
+
+model = XorMLP()
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+
+for epoch in range(500):
+    optimizer.zero_grad()
+    predictions = model(X)
+    loss = criterion(predictions, y_xor)
+    loss.backward()
+    optimizer.step()
+
+print(model(X).detach().round())
+`,
+  },
+];
+---
+<BaseLayout
+  title="Biological Neurons, the Perceptron & the MLP"
+  description="How artificial neurons are modeled on biological ones, how a perceptron learns, why it breaks on non-linear data, and how the multilayer perceptron fixes it."
+>
+  <article class="container lesson">
+    <span class="eyebrow">Deep Learning Foundation · Lesson 01</span>
+    <h1>Biological Neurons, the Perceptron & the MLP</h1>
+    <p class="lede">
+      Every deep network — however deep, however specialized — is built from one
+      repeated unit: take weighted inputs, sum them, and pass the result through a
+      non-linearity. This lesson builds that unit from first principles, then shows
+      exactly where it breaks and why stacking layers fixes it.
+    </p>
+
+    <GlassCard eyebrow="Objectives" title="By the end of this lesson you will be able to">
+      <ul>
+        <li>Explain the structural analogy between a biological neuron and an artificial one, and where the analogy stops being useful.</li>
+        <li>Derive the perceptron's output from its inputs, weights, bias, and activation function.</li>
+        <li>Prove — not just state — why a single-layer perceptron cannot learn XOR, and how a hidden layer resolves it.</li>
+        <li>Implement a perceptron from scratch, and an MLP in both TensorFlow and PyTorch.</li>
+      </ul>
+      <p><strong>Prerequisites:</strong> basic linear algebra (dot products), Python, and familiarity with what a function is in the mathematical sense.</p>
+    </GlassCard>
+
+    <h2>Biological neuron vs. artificial neuron</h2>
+    <p>
+      A biological neuron receives electrochemical signals through its <strong>dendrites</strong>,
+      integrates them in the <strong>cell body</strong>, and — if the combined signal crosses a
+      threshold — fires an impulse down its <strong>axon</strong> to the next neuron across a
+      <strong>synapse</strong>. Multiple neurons chained this way is what lets a nervous system
+      transform raw sensory input into a decision.
+    </p>
+    <p>
+      The artificial neuron keeps the shape of that idea and strips away everything biological:
+      dendrites become a vector of numeric inputs $x_1, \dots, x_n$, synaptic strength becomes a
+      learned weight $w_i$ per input, and "firing" becomes an activation function $f$ applied to
+      the weighted sum. That is the entire analogy — useful for intuition, not a claim that this
+      is how brains compute.
+    </p>
+
+    <GlassCard eyebrow="Where the analogy breaks" accent="ember">
+      <p>
+        Real neurons spike in time, use dozens of neurotransmitter types, and rewire their own
+        physical connectivity. An artificial neuron does none of this — it's a static function
+        evaluated once per forward pass. If a network engineer asks "does this mean the network
+        is thinking," the honest answer is no: it's doing repeated weighted summation and
+        function composition, nothing more mysterious than that.
+      </p>
+    </GlassCard>
+
+    <h2>The perceptron</h2>
+    <p>
+      A perceptron takes inputs $x_1, \dots, x_n$, multiplies each by a learned weight, adds a
+      bias term $b$, and passes the sum through an activation function:
+    </p>
+    <p set:html={mathPerceptronEq} />
+    <p>
+      For a classic perceptron, $f$ is a step function: output 1 if $z \geq 0$, otherwise 0.
+      Training a perceptron means adjusting $w$ and $b$ so that this decision boundary — a
+      straight line in 2D, a hyperplane in general — separates the two output classes correctly.
+    </p>
+
+    <PerceptronDiagram />
+
+    <h2>Limitations of a single-layer perceptron</h2>
+    <p>
+      A single-layer perceptron can only draw <strong>one straight decision boundary</strong>.
+      That's sufficient for AND, OR, and NAND — all linearly separable — but it is
+      mathematically impossible for XOR:
+    </p>
+    <table class="truth-table">
+      <thead><tr><th>x₁</th><th>x₂</th><th>XOR</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>0</td><td>1</td><td>1</td></tr>
+        <tr><td>1</td><td>0</td><td>1</td></tr>
+        <tr><td>1</td><td>1</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Plot those four points: no single straight line separates the 1s from the 0s. This isn't
+      a training failure — more epochs or a smaller learning rate cannot fix it, because the
+      function class (a single line) genuinely doesn't contain a correct answer.
+    </p>
+
+    <h2>The multilayer perceptron (MLP)</h2>
+    <p>
+      An MLP adds one or more <strong>hidden layers</strong> between input and output. Each
+      hidden neuron draws its own line in the transformed input space; combined, the network can
+      approximate curved, non-convex decision boundaries — including XOR. This is the same
+      principle behind every deeper architecture you'll meet later in this course: depth buys
+      you the ability to compose simple boundaries into complex ones.
+    </p>
+
+    <h2>Implementation</h2>
+    <p>
+      Below: a perceptron built from scratch (learns AND, a linearly separable function), then
+      the same problem that breaks it — XOR — solved by adding one hidden layer, in both
+      TensorFlow and PyTorch.
+    </p>
+    <CodeTabs id="perceptron-code" tabs={perceptronCode} />
+
+    <h2>Enterprise case study: traffic classification</h2>
+    <GlassCard eyebrow="Applied" accent="current">
+      <p>
+        A network security team wants to flag encrypted traffic flows as "likely VPN" vs.
+        "likely standard HTTPS" using flow-level features (packet size variance, inter-arrival
+        time, flow duration). A single perceptron over these features draws one linear boundary
+        and misclassifies a meaningful fraction of flows, because the true boundary is curved in
+        feature space — the same structural limitation as XOR. Moving to a small MLP (2 hidden
+        layers, ReLU, sigmoid output) is frequently enough to recover the non-linear boundary
+        without needing a full deep architecture, and is cheap enough to run inline on a NetFlow
+        collector.
+      </p>
+    </GlassCard>
+
+    <h2>Interview questions</h2>
+    <GlassCard eyebrow="Practice">
+      <ol>
+        <li>Why can't a single-layer perceptron learn XOR? Give a geometric argument, not just "it's not linearly separable."</li>
+        <li>What is the actual difference between the perceptron learning rule and gradient descent on a differentiable loss?</li>
+        <li>If you removed the activation function entirely from every layer of a deep MLP, what would the network reduce to, and why?</li>
+      </ol>
+    </GlassCard>
+
+    <h2>Troubleshooting guide</h2>
+    <GlassCard eyebrow="When training doesn't converge" accent="ember">
+      <ul>
+        <li><strong>Loss is stuck / flat:</strong> check that your activation function isn't saturating every neuron (e.g. sigmoid with badly scaled inputs) — see the next lesson on weight initialization.</li>
+        <li><strong>Perceptron oscillates and never converges:</strong> the data is not linearly separable — you need a hidden layer, not more epochs.</li>
+        <li><strong>Accuracy is exactly 50% on a binary task:</strong> check your labels aren't accidentally all one class, or your learning rate isn't so large it's overshooting every step.</li>
+      </ul>
+    </GlassCard>
+
+    <Quiz
+      id="lesson-1-quiz"
+      questions={[
+        {
+          question: 'What does the bias term b actually control in a perceptron?',
+          options: [
+            'The steepness of the activation function',
+            'How far the decision boundary is shifted from the origin',
+            'The learning rate',
+            'The number of training epochs',
+          ],
+          correctIndex: 1,
+          explanation: 'The bias shifts the decision hyperplane away from passing through the origin, exactly like the intercept in y = mx + b.',
+        },
+        {
+          question: 'Why does XOR require a hidden layer?',
+          options: [
+            'XOR has 4 possible input combinations, which is too many for one neuron',
+            'A single perceptron can only represent one linear decision boundary, and XOR requires two',
+            'XOR is not a deterministic function',
+            'The step activation function cannot output 0',
+          ],
+          correctIndex: 1,
+          explanation: 'XOR is only solvable by combining two linear boundaries — which is exactly what a hidden layer of two or more neurons provides.',
+        },
+        {
+          question: 'If every activation function in a 10-layer MLP is removed (identity function), what happens?',
+          options: [
+            'The network trains faster with no loss in accuracy',
+            'The network becomes mathematically equivalent to a single linear layer',
+            'The network becomes a perceptron',
+            'Nothing changes, activation functions only affect inference speed',
+          ],
+          correctIndex: 1,
+          explanation: 'Stacked linear transformations are still linear — composing 10 linear layers collapses to one linear layer, regardless of depth.',
+        },
+      ]}
+    />
+
+    <GlassCard eyebrow="Assignment">
+      <p>
+        Implement a perceptron that learns the OR function from scratch (no libraries beyond
+        NumPy). Then attempt to train the same perceptron class on XOR and log the accuracy per
+        epoch. Submit a short write-up (under 300 words) explaining what you observe in the loss
+        curve and why, referencing the geometric argument from this lesson.
+      </p>
+    </GlassCard>
+
+    <GlassCard eyebrow="Mini project" accent="current">
+      <p>
+        Build a 2-input, 1-hidden-layer MLP in either TensorFlow or PyTorch that classifies
+        points from two interleaving spirals (a classic non-linearly-separable dataset). Plot the
+        learned decision boundary. Then reduce the hidden layer to 1 neuron and observe how the
+        boundary degrades back toward a straight line.
+      </p>
+    </GlassCard>
+
+    <h2>References</h2>
+    <ul class="refs">
+      <li>Rosenblatt, F. (1958). "The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain."</li>
+      <li>Minsky, M. & Papert, S. (1969). <em>Perceptrons</em> — the original proof of the XOR limitation.</li>
+      <li>Goodfellow, Bengio, Courville. <em>Deep Learning</em>, Chapter 6: Deep Feedforward Networks.</li>
+    </ul>
+
+    <GlassCard eyebrow="Summary">
+      <p>
+        A perceptron is a linear classifier wearing a biological metaphor. It works exactly as
+        well as its decision boundary allows — a single straight line — which is provably
+        insufficient for functions like XOR. The multilayer perceptron fixes this not by being
+        "smarter," but by composing multiple linear boundaries into a non-linear one. Every
+        architecture in this course builds on that single idea.
+      </p>
+    </GlassCard>
+
+    <nav class="lesson-nav">
+      <a href="/neuronet-academy/courses/deep-learning/">← Course overview</a>
+      <a href="/neuronet-academy/courses/deep-learning/forward-and-backpropagation/">Next: Forward Propagation & Backpropagation →</a>
+    </nav>
+  </article>
+
+  <style>
+    .lesson { padding-block: var(--space-16) var(--space-24); max-width: 860px; }
+    .lede { font-size: var(--text-lg); }
+    .truth-table { border-collapse: collapse; margin: var(--space-6) 0; font-family: var(--font-mono); font-size: var(--text-sm); }
+    .truth-table th, .truth-table td { border: 1px solid var(--color-border-strong); padding: var(--space-2) var(--space-4); text-align: center; }
+    .truth-table th { color: var(--color-signal); }
+    .refs { color: var(--color-mist); font-size: var(--text-sm); }
+    .lesson-nav { display: flex; justify-content: space-between; margin-top: var(--space-16); padding-top: var(--space-8); border-top: 1px solid var(--color-border); font-size: var(--text-sm); }
+  </style>
+</BaseLayout>

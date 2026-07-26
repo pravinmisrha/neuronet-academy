@@ -1,0 +1,114 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { deepLearningCourse } from '@data/deepLearningCourse';
+---
+<BaseLayout
+  title="NeuroNet Academy"
+  description="An engineering education platform teaching AI, ML, and infrastructure to production depth."
+>
+  <section class="hero container">
+    <div class="hero-copy">
+      <span class="eyebrow">Module 01 · Deep Learning</span>
+      <h1>Signal in.<br />Structure out.</h1>
+      <p class="lede">
+        NeuroNet Academy teaches neural networks the way you'd want to learn them before
+        deploying one in production: full derivations, worked numeric examples, and code
+        in Python, TensorFlow, and PyTorch side by side.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/neuronet-academy/courses/deep-learning/">Start the course →</a>
+        <a class="btn btn-ghost" href="#courses">View syllabus</a>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <svg viewBox="0 0 400 300">
+        <polyline
+          class="trace"
+          fill="none"
+          points="0,150 30,150 45,90 60,210 75,60 90,240 105,150 130,150"
+        />
+        <g class="graph">
+          <line x1="160" y1="150" x2="240" y2="80" />
+          <line x1="160" y1="150" x2="240" y2="150" />
+          <line x1="160" y1="150" x2="240" y2="220" />
+          <line x1="240" y1="80" x2="320" y2="150" />
+          <line x1="240" y1="150" x2="320" y2="150" />
+          <line x1="240" y1="220" x2="320" y2="150" />
+          <circle cx="160" cy="150" r="8" />
+          <circle cx="240" cy="80" r="8" />
+          <circle cx="240" cy="150" r="8" />
+          <circle cx="240" cy="220" r="8" />
+          <circle cx="320" cy="150" r="10" class="output" />
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="container" id="courses">
+    <span class="eyebrow">Available now</span>
+    <h2>Deep Learning Foundation</h2>
+    <p class="section-lede">{deepLearningCourse.description}</p>
+
+    <div class="lesson-grid">
+      {deepLearningCourse.lessons.map((lesson) => (
+        <a
+          class:list={['lesson-card glass', { disabled: lesson.status !== 'available' }]}
+          href={lesson.status === 'available' ? `/neuronet-academy/courses/deep-learning/${lesson.slug}/` : undefined}
+        >
+          <span class="lesson-status">{lesson.status === 'available' ? 'Available' : 'Coming next'}</span>
+          <h3>{lesson.title}</h3>
+          <p>{lesson.summary}</p>
+          <span class="lesson-duration">{lesson.durationMinutes} min</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <style>
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: var(--space-12);
+      align-items: center;
+      padding-block: var(--space-24) var(--space-16);
+    }
+    .lede { font-size: var(--text-lg); max-width: 46ch; }
+    .hero-actions { display: flex; gap: var(--space-4); margin-top: var(--space-8); }
+    .hero-visual svg { width: 100%; height: auto; }
+    .trace { stroke: var(--color-current); stroke-width: 2; opacity: 0.7; }
+    .graph line { stroke: var(--color-border-strong); stroke-width: 1.5; }
+    .graph circle { fill: var(--color-graphite-2); stroke: var(--color-signal); stroke-width: 1.5; }
+    .graph circle.output { fill: var(--color-signal); stroke: none; }
+
+    .section-lede { max-width: 68ch; font-size: var(--text-lg); margin-bottom: var(--space-8); }
+
+    .lesson-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-6);
+      margin-top: var(--space-8);
+    }
+    .lesson-card {
+      display: block;
+      padding: var(--space-6);
+      color: var(--color-paper);
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+    .lesson-card:hover { transform: translateY(-3px); border-color: var(--color-border-strong); color: var(--color-paper); }
+    .lesson-card.disabled { opacity: 0.45; pointer-events: none; }
+    .lesson-status {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-signal);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .lesson-card h3 { margin-top: var(--space-3); font-size: var(--text-lg); }
+    .lesson-card p { font-size: var(--text-sm); }
+    .lesson-duration { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-mist-dim); }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding-block: var(--space-16) var(--space-8); }
+    }
+  </style>
+</BaseLayout>
